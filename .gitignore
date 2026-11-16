@@ -1,3 +1,4 @@
 /DockerMongo/credentials.ini
 /DockerMongo/__pycache__
+/DockerMongo/tests/__pycache__/
 .DS_Store

@@ -1,4 +1,5 @@
 import os
+import math
 from flask import Flask, redirect, url_for, request, render_template, jsonify
 from pymongo import MongoClient
 import arrow
@@ -9,6 +10,10 @@ app = Flask(__name__)
 client = MongoClient(os.environ['DB_PORT_27017_TCP_ADDR'], 27017)
 db = client.tododb
 
+@app.template_filter('control_time')
+def format_control_time(value):
+    return arrow.get(value).to('utc').format('ddd M/D H:mm')
+
 @app.route("/")
 @app.route("/index")
 def index():
@@ -16,25 +21,114 @@ def index():
     return render_template('calc.html')
 
 
-    """
-    _items = db.tododb.find()
-    items = [item for item in _items]
-    return render_template('todo.html', items=items)
-    """
+@app.route('/display')
+def display():
+    brevets = list(db.tododb.find())
+    return render_template('display.html', brevets=brevets)
 
 @app.route('/new', methods=['POST'])
 def new():
 
-    print(request.form)
-    return redirect(url_for('index'))
+    """request.form:
 
+    distance:
+    begin_date: (XXXX-XX-XX)
+    begin_time: (XX:XX) (24h)
+    miles: 
+    km:
+    location (optional)
+    open:
+    close:
+    """
+
+    print(request.form)
+    #print("\n".join(f"{k}: {v}" for k, v in request.form.to_dict(flat=False).items()))
+
+    distance = request.form.get('distance')
+    begin_date = request.form.get('begin_date')
+    begin_time = request.form.get('begin_time')
+
+    # lists
+    miles = request.form.getlist('miles')
+    km = request.form.getlist('km')
+    locations = request.form.getlist('location')
+
+    #error handling
+    if (distance == None or begin_date == None or begin_time == None):
+        return render_template(
+            "calc.html",
+            error="Could not parse, please try again."
+        ), 400
+
+    controls = []
+
+    for i, km_value in enumerate(km):
+        if km_value.strip() == "": # string was empty
+            continue
+
+        controls.append(
+            {
+                'miles': miles[i].strip(),
+                'km': km_value.strip(),
+                'location': locations[i].strip(),
+            }
+        )
+
+    # if controls are empty, error
+    if not controls:
+        return render_template(
+            "calc.html",
+            error="Enter at least one control before submitting."
+        ), 400
+
+    # use the start time and calculation functions
+    try:
+        distance = int(distance)
+        start_time = arrow.get(
+            f"{begin_date} {begin_time}", 'YYYY-MM-DD HH:mm'
+        ).isoformat()
+    except (TypeError, ValueError):
+        return render_template(
+            "calc.html",
+            error="Enter a valid brevet distance, start date, and start time."
+        ), 400
+
+    if distance not in {200, 300, 400, 600, 1000}:
+        return render_template(
+            "calc.html",
+            error="Choose a supported brevet distance."
+        ), 400
+
+    for control in controls:
+        try:
+            control_km = float(control['km'])
+        except ValueError:
+            return render_template(
+                "calc.html", error="Control distances must be numbers."
+            ), 400
+
+        if not math.isfinite(control_km) or control_km < 0:
+            return render_template(
+                "calc.html",
+                error="Control distances must be finite, nonnegative numbers."
+            ), 400
+
+        control['km'] = control_km
+        control['open'] = acp_times.open_time(control_km, distance, start_time)
+        control['close'] = acp_times.close_time(control_km, distance, start_time)
+    
     item_doc = {
-        'name': request.form['name'],
-        'description': request.form['description']
+        'brevet_distance_km': distance,
+        'begin_date': begin_date,
+        'begin_time': begin_time,
+        'controls': controls,
     }
+
     db.tododb.insert_one(item_doc)
 
-    return redirect(url_for('index'))
+    return redirect('/')
+
+
 
 
 ###############

@@ -120,6 +120,10 @@
     <button type="submit">Display</button>
 </form>
 
+{% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
 <script type="text/javascript">
 
   var SCRIPT_ROOT = {{ request.script_root|tojson|safe }} ;
@@ -158,7 +162,15 @@
     }
 
   $(document).ready(function(){
-   // Do the following when the page is finished loading
+    // Do the following when the page is finished loading
+
+    // don't let the enter key submit our form
+    $('form input, form select').on('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            $(this).blur(); // basically mimics clicking outside of the form which will submit our calculations
+        }
+    });
 
     $('#brevet_dist_km, #begin_date, #begin_time').change(
         function() {

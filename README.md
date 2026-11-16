@@ -1,50 +1,50 @@
-# Project 5: Brevet time calculator with Ajax and MongoDB
+Author: Weston Battles
 
-Simple list of controle times from project 4 stored in MongoDB database.
+Contact: wbattles@uoregon.edu
 
-## What is in this repository
+#### Running tests
+***
+Running the executable in `./DockerMongo/tests/tests.sh` performs 4 unit tests using Flask's test client (testing submissions to a temporary MongoDB database which gets deleted afterwards)
+<br>
+<br>
 
-You have a minimal implementation of Docker compose in DockerMongo folder, using which you can connect the flask app to MongoDB (as demonstrated in class). Refer to the lecture slide `05a-Table-driven.pdf` and `05b-Docker-Compose.pdf`. You'll also need MongoCommands.txt. Solved acp_times.py file is in Canvas! 
 
-## Functionality you'll add
+#### Brevet Time Control Specification
+***
+*Calculates opening/closing times for control points in brevets of exclusively 200, 300, 400, 600 and 1000 kilometers*
 
-You will reuse *your* code from project 4 (https://bitbucket.org/UOCIS322/proj4-brevets/). Recall: you created a list of open and close controle times using AJAX. In this project, you will create the following functionalities.
 
-1. Create two buttons "Submit" and "Display" in the page where have controle times.
-2. On clicking the Submit button, the control times should be entered into the database.
-3. On clicking the Display button, the entries from the database should be displayed in a new page.
+<u>*Input Specification:*</u> <br>
+\- Each successful submission saves a unique brevet containing all of its controls<br>
+\- Control distances can contain decimals, but must be nonnegative<br>
+\- Location names are optional<br>
+\- Blank control rows are skipped<br>
+\- One control is required for submission<br>
+\- Total brevet distance must be 200, 300, 400, 600 or 1000km <br>
 
-Handle error cases appropriately. For example, Submit should return an error if there are no controle times. One can imagine many such cases: you'll come up with as many cases as possible.
+<br>
 
-## Tasks
 
-* Submit a working application.
-* A README.md file that includes not only identifying information (your name) but but also a revised, clear specification 
-  of the brevet controle time calculation rules.
-* Dockerfile
-* Test cases for the two buttons. No need to run nose.
-* docker-compose.yml
 
-### You'll turn in your credentials.ini from which we will get the following:
+<u>*Calculation Rules:*</u> <br>
+Opening times are calculated using maximum speeds for given distance intervals and closing times are calculated using minimum speeds (as given by the following): <br>
 
-* `author`
-* `repo`
+(*intervals are lower-exclusive and upper-inclusive*)<br>
+0-200km: 15km/h min speed, 34km/h max speed<br>
+200-400km: 15km/h min speed, 32km/h max speed<br>
+400-600km: 15km/h min speed, 30km/h max speed<br>
+600-1000km: 11.428km/h min speed, 28km/h max speed<br>
+1000-1300km: 13.333km/h min speed, 26km/h max speed<br>
 
-All must be under the section `[DEFAULT]`.
+For controls spanning multiple of these distance intervals, the time for each interval is simply calculated separately and summed. The resulting elapsed time is rounded to the nearest minute and added to the actual brevet start time.
 
-## Grading Rubric
-
-* If your code works as expected: 100 points. This includes:
-	* AJAX in the frontend. That is, open and close times are automatically populated, 
-	* Frontend to backend interaction (with correct requests/responses), 
-	* README is updated with your name and email.
-* If the AJAX logic is not working, 10 points will be docked off. 
-* If the README is not clear or missing, up to 15 points will be docked off. 
-* If the two test cases fail, up to 15 points will be docked off.
-* If the logic to enter into or retrieve from the database is wrong, 30 points will be docked off.
-* If none of the functionalities work, 30 points will be given assuming 
-    * The credentials.ini is submitted with the correct URL of your repo, and
-    * Dockerfile is present 
-    * Docker-compose.yml works/builds without any errors
-* If the Docker-compose.yml doesn't build or is missing, 10 points will be docked off.
-* If credentials.ini is missing, 0 will be assigned.
+<u>__*SPECIAL CASES!:*__</u><br>
+\- Controls at 0km start at the brevet start time, and close exactly one hour later <br>
+\- The maximum closing time for controls are as follows:<br>
+&emsp;&emsp;&emsp;FOR 200KM BREVETS: 13h30m<br>
+&emsp;&emsp;&emsp;FOR 300KM BREVETS: 20h<br>
+&emsp;&emsp;&emsp;FOR 400KM BREVETS: 27h<br>
+&emsp;&emsp;&emsp;FOR 600KM BREVETS: 40h<br>
+&emsp;&emsp;&emsp;FOR 1000KM BREVETS: 75h<br>
+\- Control distances that are beyond the brevet distance are capped to that brevet distance for time calculations<br>
+\- For controls within the first 60 km, closing times are calculated using a minimum speed of 20 km/h, plus one additional hour. For controls at and beyond 60 km, the standard minimum-speed calculation applies
