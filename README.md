@@ -5,7 +5,7 @@ Contact: wbattles@uoregon.edu
 #### Running tests
 ***
 Running the executable in `./DockerMongo/tests/tests.sh` performs 4 unit tests using Flask's test client (testing submissions to a temporary MongoDB database which gets deleted afterwards)<br><br>
-\- btw it uses test POST submission to /new (what the submit button does), and then verifies them using GET requests to /display (what the display button does)
+\- btw it uses test POST submissions to /new (which is what the submit button does), and then verifies them using GET requests to /display (what the display button does)
 <br>
 <br>
 
